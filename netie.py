@@ -43,9 +43,6 @@ def subnet_correct(ip, postfix='32'):
 def simplify_mask(mask='255.255.255.0',net_number=8):
     mask = mask.split('.')
     mask = map(int,mask)            #   [255, 255, 255, 0]
-    power = lambda x: 2**x
-    meta = map(power,range(8))      #   [1, 2, 4, 8, 16, 32, 64, 128]
-    meta.reverse()                  #   [128, 64, 32, 16, 8, 4, 2, 1]
     result = 0
 
     def complicate(mask=255):
@@ -55,14 +52,18 @@ def simplify_mask(mask='255.255.255.0',net_number=8):
             print  net,int(net,2), net_number
             if int(net,2) == mask:
                  return net_number
-    return  complicate(248)
+    for each in mask:
+        result += complicate(each)
+    return  result
+
+
 def main():
     '''
     ip = '10.69.231.70'
     net = '29'
     ip = subnet_correct(ip, net)
     '''
-    print simplify_mask('254.0.0.0')
+    print simplify_mask('255.255.128.0')
 
 
 if __name__ == '__main__':
