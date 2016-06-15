@@ -40,22 +40,28 @@ def subnet_correct(ip, postfix='32'):
     ip = "%s.%s.%s.%s" % (ip[0], ip[1], ip[2], ip[3])
     return  ip
 
-def simplify_mask(mask='255.255.255.0',net_number=8):
-    mask = mask.split('.')
-    mask = map(int,mask)            #   [255, 255, 255, 0]
-    result = 0
+def mask2int(mask='255.255.255.0'):
+    '''
+    1.  '255.11111.266.4' to '255.255.255.0' to 24
+    2.  '255.128.255.0'  to 9
+    '''
+    mask_list = mask.split('.')
+    mask_list = map(int,mask_list)                            # int list
+    notexcess = lambda x: ( x > 255) and 255 or x           # if any one bigger than 255, set to 255
+    addzero= lambda x : ( x not in "10" ) and '0' or x
+    mask_list = map(notexcess, mask_list)
+    # print( mask_list)
+    binmask_total=''
+    for x in range(4):
+        binmask = "%8s" %bin(mask_list[x]).split('0b')[1]   #  '    1101'
+        binmask = ''.join(map(addzero,list(binmask)))       #  '00001101'  , addzero
+        binmask_total += binmask
+    zindex = binmask_total.index('0')
+    return  zindex
 
-    def complicate(mask=255):
-        for net_number in range(8,-1,-1):
-            hosts = 8 - net_number
-            net = '0b' + '1'* net_number + '0' * hosts
-            print  net,int(net,2), net_number
-            if int(net,2) == mask:
-                 return net_number
-    for each in mask:
-        result += complicate(each)
-    return  result
-
+def help():
+    print 'help info...'
+    sys.exit(1)
 
 def main():
     '''
@@ -63,8 +69,18 @@ def main():
     net = '29'
     ip = subnet_correct(ip, net)
     '''
-    print simplify_mask('255.255.128.0')
+    # print mask2int('224.0.0.0')
+    # mask_correcter('255.128.255.0')
 
+    args = sys.argv
+    net = args[1].split('/')
+
+    if len(net) == 1 or net[1]=='':   # assume it's a mask
+        net = net[0]
+        print mask2int(net)
+    else:                             # in form like 192.168.1.2/24
+        net,mask = net
+        print subnet_correct(net,mask)
 
 if __name__ == '__main__':
     main()
