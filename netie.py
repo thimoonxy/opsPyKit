@@ -12,7 +12,7 @@ sys.setdefaultencoding('utf-8')
 
 addzero= lambda x : ( x not in "10" ) and '0' or x
 
-def ip2network_address(ip, cidr='32'):
+def ip2network_address(ip='192.168.1.0', cidr='32'):
     """
     This func also corrects wrong subnet, e.g.
     if found 10.69.231.70/29, it'll be corrected to 10.69.231.64/29.
@@ -142,23 +142,130 @@ def hexlist2binlist(hexlist):
     ip = hexlist2ip(hexlist)
     return ip2binlist(ip)
 
-def help():
+
+def hostamount2cidr(amount=1):
+    constant_hostnumber_list = []
+    for cidr in range(32,-1,-1):
+        constant_hostnumber_list.append( ip2network_address(cidr=cidr)[0])
+        if ip2network_address(cidr=cidr)[0] >= amount:
+            return cidr
+
+def ip2class(ip):
+    '''
+    A: Leading bits  0
+    B: Leading bits  10
+    C: Leading bits  110
+    D: Leading bits  1110   (multicast)
+    E: Leading bits  1111   (reserved)
+
+    References:
+    1. https://en.wikipedia.org/wiki/Classful_network#Introduction_of_address_classes
+    2. http://www.tcpipguide.com/free/t_IPAddressClassABandCNetworkandHostCapacities.htm
+
+    In the following table:
+       - n indicates a bit used for the network ID.
+       - H indicates a bit used for the host ID.
+       - X indicates a bit without a specified purpose.
+
+    Class A
+    0.  0.  0.  0   =   00000000.00000000.00000000.00000000
+    127.255.255.255 =   01111111.11111111.11111111.11111111
+                        0nnnnnnn.HHHHHHHH.HHHHHHHH.HHHHHHHH
+    Class B
+    128.  0.  0.  0 =   10000000.00000000.00000000.00000000
+    191.255.255.255 =   10111111.11111111.11111111.11111111
+                        10nnnnnn.nnnnnnnn.HHHHHHHH.HHHHHHHH
+    Class C
+    192.  0.  0.  0 =   11000000.00000000.00000000.00000000
+    223.255.255.255 =   11011111.11111111.11111111.11111111
+                        110nnnnn.nnnnnnnn.nnnnnnnn.HHHHHHHH
+    Class D
+    224.  0.  0.  0 =   11100000.00000000.00000000.00000000
+    239.255.255.255 =   11101111.11111111.11111111.11111111
+                        1110XXXX.XXXXXXXX.XXXXXXXX.XXXXXXXX
+    Class E
+    240.  0.  0.  0 =   11110000.00000000.00000000.00000000
+    255.255.255.255 =   11111111.11111111.11111111.11111111
+                        1111XXXX.XXXXXXXX.XXXXXXXX.XXXXXXXX
+    '''
+
+    classful_dict = {
+        int('1' * 1 + '0' * (8 - 1), 2): 'B',
+        int('1' * 2 + '0' * (8 - 2), 2): 'C',
+        int('1' * 3 + '0' * (8 - 3), 2): 'D',
+        int('1' * 4 + '0' * (8 - 4), 2): 'E',
+    }
+    ip = ip2binlist(ip)[0]  # ip,  <type 'str'>
+    if int(ip,2) > 255:     # typo, should be 0 <= ip <= 255
+        return None
+    flags=[]
+    for leading in classful_dict.keys():
+        if (int(ip,2) & leading) == leading:
+            flags.append(leading)
+    if len(flags) == 0:
+        return 'A'
+    return classful_dict[max(flags)]
+
+def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
+    default_netbits_dict = {
+        'A' : 8,
+        'B' : 16,
+        'C' : 24,
+    }
+
+    c = ip2class(ip)
+    if c not in default_netbits_dict.keys():
+        print "Class %s not allowed subnetting." %c
+        help_info()
+    default_cidr = default_netbits_dict[c]
+    default_network_address = ip2network_address(ip,default_cidr)[2]
+    default_network_address_bin_list = ip2binlist(default_network_address)
+    default_network_address_bin_str = ''.join(default_network_address_bin_list)
+    print default_network_address_bin_str
+    int2binlist = lambda i:  [ bin(x).split('0b')[1].zfill(i)   for x in range(2 ** i)   ]
+    '''
+    In [121]: int2binlist(2)
+    Out[121]: ['00', '01', '10', '11']
+
+    In [122]: int2binlist(3)
+    Out[122]: ['000', '001', '010', '011', '100', '101', '110', '111']
+    '''
+
+
+
+    if host_amount:
+        host_amount = int(host_amount)
+        network_address_list = []
+        cidr = hostamount2cidr(host_amount)
+        mask = cidr2mask(cidr)
+        print(mask)
+        subnet_bits = cidr - default_cidr
+        if subnet_bits > 0:              #  1<= subnet_bits <=7
+            flag = 'subnet'
+            subnet_amount = 2 ** subnet_bits
+            binlist = int2binlist(subnet_bits)
+            print binlist
+            zeroend = 8 - subnet_bits
+            print zeroend
+            zeroendstr = '0' * zeroend
+            subnetid_list = [ int(x + zeroendstr,2) for x in binlist   ]       #  ['00000000', '01000000', '10000000', '11000000']  -->  [0, 64, 128, 192]
+            print subnetid_list
+        else:
+            flag = 'supernet'
+            subnet_amount = 1
+            network_address = ip2network_address(ip,cidr)[2]
+            network_address_list.append(network_address)
+        return cidr,c, flag,  subnet_amount, network_address_list
+
+def help_info():
     print 'help info...'
     sys.exit(1)
 
 def main():
-    ip = '192.168.141.111'
-    net = 22
-    print ip2network_address(ip, net)
-    print cidr2mask(net)
-    mask = cidr2mask(net)
-    print mask2cidr(mask)
-    # print mask2complement_bin_list(mask)
-    # print ipmask2network_address(ip,mask)
-    binlist = ip2binlist(ip)
-    # print binlist
-    hexlist =  binlist2hexlist(binlist)
-    # print hexlist2binlist(hexlist)
+    ip = '192.21.160.73'
+    mask = '255.255.255.192'
+    cidr = mask2cidr(mask)
+    print subnetting(ip,host_amount=30)
     '''
     # cmd
     args = sys.argv
