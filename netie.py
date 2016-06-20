@@ -5,6 +5,7 @@
 '''
 Target: enable every func in http://tool.chinaz.com/Tools/subnetmask
 '''
+from optparse import OptionParser
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -258,8 +259,9 @@ def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
             sub_binlist = int2binlist(subnet_bits)
             # print sub_binlist
             for subbinstr in sub_binlist:
-                fullbinstr = default_network_address_bin_str + subbinstr + '0' * (32 - cidr)
+                fullbinstr = ''.join([ list(default_network_address_bin_str)[x] for x in range(default_cidr)]) + subbinstr + '0' * (32 - cidr)
                 # print fullbinstr
+                # print len(fullbinstr)
                 binlist = bin2binlist(fullbinstr)
                 # print binlist
                 network_address_list.append( binlist2ip(binlist)  )
@@ -271,6 +273,7 @@ def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
         return cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount
 
     elif subnet_amount:
+        subnet_amount = int(subnet_amount)
         network_address_list = []
         subnet_bits = min([ subnet_bits for subnet_bits in range(32) if 2 ** subnet_bits >= subnet_amount ] )
         cidr = subnet_bits + default_cidr
@@ -279,7 +282,7 @@ def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
             flag = 'subnet'
             sub_binlist = int2binlist(subnet_bits)
             for subbinstr in sub_binlist:
-                fullbinstr = default_network_address_bin_str + subbinstr + '0' * (32 - cidr)
+                fullbinstr = ''.join([ list(default_network_address_bin_str)[x] for x in range(default_cidr)]) + subbinstr + '0' * (32 - cidr)
                 # print fullbinstr
                 binlist = bin2binlist(fullbinstr)
                 # print binlist
@@ -289,14 +292,235 @@ def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
             subnet_amount = 1
             network_address = ip2network_address(ip,cidr)[2]
             network_address_list.append(network_address)
-        return cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount
-def help_info():
-    print 'help info...'
+        return cidr,c, flag,  len(network_address_list), network_address_list, avail_host_amount
+def help_info( mode='all'):
+    info = ''
+    print '========================\n'
+    print 'Modes Usage:'
+    cut_off =  '------------------------\n'
+    print cut_off
+    info_dict = {
+    1: '''Mode = 1,  Transfer IP to  the Network Address info.
+
+    ip, mask/cidr -->
+        (avail_host_numbers, netmask, network_address, first_avail_ip,last_avail_ip, broadcast_address),
+
+    e.g.:
+        --mode 1 --ip 192.168.141.111 --cidr 29
+    output:
+        (6, '255.255.255.248', '192.168.141.104', '192.168.141.105', '192.168.141.110','192.168.141.111')
+
+    e.g.:
+         -M 1 -i 172.16.1.1 -m 255.255.255.0
+    output:
+        (254, '255.255.255.0', '172.16.1.0', '172.16.1.1', '172.16.1.254', '172.16.1.255')
+    ''',
+    2: '''Mode = 2, Transfer cidr --> mask,
+
+    e.g.:
+        --cidr 28
+    output:
+        ('255.255.255.240', 'FF.FF.FF.F0')
+    ''',
+    3: '''Mode = 3, Transfer  mask --> cidr,
+
+    e.g.:
+        --mode 3   --mask 255.255.192.192
+    output:
+        ('255.255.192.0', 18)
+    ''',
+    4: '''Mode = 4, Subnetting for specific number of subnets that we want.
+
+    ip, subnet_amount --> (cidr,c, flag,  subnet_amount, network_address_list, avail_host_amount)
+
+    e.g.:
+        -M 4 -i 172.16.2.33 -s 3
+    output:
+        (18, 'B', 'subnet', 3, ['172.16.0.0', '172.16.64.0', '172.16.128.0', '172.16.192.0'], 16382)
+    ''',
+    5: '''Mode = 5, Subnetting for specific number of host addresses in each subnet.
+
+    ip, host_amount --> (cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount)
+
+    e.g.:
+        -M 5 --ip 172.16.2.33 -h 9000
+    output:
+        (18, 'B', 'subnet', 4, ['172.16.0.0', '172.16.64.0', '172.16.128.0', '172.16.192.0'], 16382)
+    ''',
+    6: '''Mode = 6, Transfer ip --> (binstr, hexstr,dec),
+
+    e.g.:
+        --mode 6 --ip 192.168.141.111
+    output:
+        ('11000000.10101000.10001101.01101111', 'C0.A8.8D.6F', 3232271727L)
+    ''',
+    7: '''Mode = 7, Transfer binstr --> (ip, hexstr, dec),
+
+    e.g.
+        --mode 7 --ip 11000000.10101000.10001101.01101111
+    output:
+        ('192.168.141.111', 'C0.A8.8D.6F', 3232271727L)
+    ''',
+    8: '''Mode = 8, Transfer hexstr --> (ip, binstr, dec),
+
+    e.g.:
+        --mode 8 --ip C0.A8.8D.6F
+    output:
+        ('192.168.141.111', '11000000.10101000.10001101.01101111', 3232271727L)
+    ''',
+    9: '''Mode = 9, Transfer dec --> (ip, binstr, hexstr),
+
+    e.g.:
+        --mode 9 --ip 3232271727
+    output:
+        ('192.168.141.111', '11000000.10101000.10001101.01101111', 'C0.A8.8D.6F')
+    ''',
+    }
+    try:
+        print info_dict[int(mode)]
+        print cut_off
+    except:
+        for x in range(1,10):
+            print info_dict[x]
+            print cut_off
+    print 'Other modes Usage, e.g.: --mode 3 --all'
+    print '. END .'
     sys.exit(1)
 
 def main():
-    ip = '192.21.160.73'
-    print subnetting(ip,host_amount=100,subnet_amount=1)
+
+    '''
+    parser blocks:
+    '''
+
+    parser = OptionParser(add_help_option=False)
+    parser.add_option('-i', '--ip',
+                                dest='ip', )
+    parser.add_option('-c', '--cidr',
+                                dest='cidr',
+                                help='Specify the cidr of mask to query. e.g. --cidr 24, indicates mask=255.255.255.0')
+    parser.add_option('-m', '--mask',
+                                dest='mask',
+                                help='Specify the Dotted Decimal mask to query. e.g. -m 255.255.0.0')
+    parser.add_option('-h', '--host_amount',
+                                dest='host_amount',
+                                help='Specify the number of available hosts we want in each subnet.')
+    parser.add_option('-s', '--subnet_amount',
+                                dest='subnet_amount',
+                                help='Specify the number of subnets we want.')
+    parser.add_option('-M', '--mode',
+                                dest='mode',
+                                help='Specify  Mode 1-9 to calculate or transfer.')
+    def option_without_param(option, opt_str, value, parser):
+        parser.values.details = True
+
+    parser.add_option("-a","--all", action="callback", callback=option_without_param, help='Details will be shown')
+    parser.add_option('-?', '--help',
+                                action='store_true',
+                                help='--help --all shows Mode details.')
+    (options, args) = parser.parse_args()
+
+
+
+    ip  =   options.ip
+    cidr = options.cidr
+    mask = options.mask
+    host_amount = options.host_amount
+    subnet_amount = options.subnet_amount
+    mode = options.mode
+
+    try:
+        if  options.details:
+            details = options.details
+    except AttributeError:
+        details = None
+
+    if options.help :
+        parser.print_help()
+        if details or mode:
+            help_info(mode)
+        parser.exit()
+
+    if (ip or cidr or mask or host_amount or subnet_amount) is None:
+        parser.print_help()
+        if details or mode:
+            help_info(mode)
+        parser.exit()
+
+    try:
+        '''
+        parameter auto-adjustment
+        '''
+        if cidr and (mask is None):
+            mask = cidr2mask(cidr)
+        if mask and (cidr is None):
+            cidr = mask2cidr(mask)
+        '''
+        Different Modes
+        '''
+        if mode == '1' :
+            result = ip2network_address(ip,cidr)
+        elif mode == '2':
+            mask = cidr2mask(cidr)
+            hex = cidr2hex(cidr)
+            result = (mask, '.'.join(hex))
+        elif mode == '3' :
+            '''
+            Recall cidr2mask cuz input mask might be invalid mask,
+            '''
+            cidr = mask2cidr(mask)
+            correct = cidr2mask(cidr)
+            result = (correct, cidr)
+        elif mode == '4':
+            '''
+            ip, subnet_amount --> (cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount)
+            '''
+            result = subnetting(ip,subnet_amount=subnet_amount)
+            # if result is None:
+            #     help_info(mode)
+        elif mode == '5':
+            '''
+            ip, host_amount --> (cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount)
+            '''
+            result = subnetting(ip, host_amount= host_amount)
+            # if result is None:
+            #     help_info(mode)
+        elif mode == '6':
+            binstr = '.'.join(ip2binlist(ip))
+            hexstr = '.'.join(ip2hexlist(ip))
+            dec = int(''.join(ip2binlist(ip)),2)
+            result = (binstr, hexstr,dec)
+        elif mode =='7':
+            binstr = ip
+            binlist = binstr.split('.')
+            ip = binlist2ip(binlist)
+            hexstr = '.'.join(ip2hexlist(ip))
+            dec = int( ''.join( binlist ) ,2)
+            result = (ip, hexstr, dec)
+        elif mode =='8':
+            hexstr = ip
+            hexlist = hexstr.split('.')
+            ip = hexlist2ip( hexlist )
+            binstr = '.'.join(hexlist2binlist(hexlist))
+            dec = int( ''.join( hexlist ) ,16)
+            result = (ip, binstr, dec)
+        elif mode == '9':
+            dec = int(ip)
+            binstr = bin(dec).split('0b')[1].zfill(32)
+            binlist = bin2binlist(binstr)
+            binstr = '.'.join(binlist)
+            ip = binlist2ip(binlist)
+            hexstr = '.'.join( binlist2hexlist(binlist) )
+            result =  (ip, binstr, hexstr)
+        else:
+            parser.print_help()
+            help_info(mode)
+    except :
+            help_info(mode)
+
+    if result is None:
+        help_info(mode)
+    print result
 
 if __name__ == '__main__':
     main()
