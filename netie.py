@@ -206,6 +206,18 @@ def ip2class(ip):
         return 'A'
     return classful_dict[max(flags)]
 
+def bin2binlist(binstr):
+    raw_list = []
+    result_list = []
+    for x in list(binstr):
+        if len(raw_list) != 7:
+            raw_list.append(x)
+        else:
+            raw_list.append(x)
+            result_list.append(''.join(raw_list))
+            raw_list = []
+    return  result_list
+
 def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
     default_netbits_dict = {
         'A' : 8,
@@ -221,7 +233,8 @@ def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
     default_network_address = ip2network_address(ip,default_cidr)[2]
     default_network_address_bin_list = ip2binlist(default_network_address)
     default_network_address_bin_str = ''.join(default_network_address_bin_list)
-    print default_network_address_bin_str
+    # print default_network_address_bin_str
+    # print bin2binlist(default_network_address_bin_str)
     int2binlist = lambda i:  [ bin(x).split('0b')[1].zfill(i)   for x in range(2 ** i)   ]
     '''
     In [121]: int2binlist(2)
@@ -231,52 +244,59 @@ def subnetting(ip='192.168.0.1', host_amount=None, subnet_amount=None):
     Out[122]: ['000', '001', '010', '011', '100', '101', '110', '111']
     '''
 
-
-
     if host_amount:
         host_amount = int(host_amount)
         network_address_list = []
         cidr = hostamount2cidr(host_amount)
         mask = cidr2mask(cidr)
-        print(mask)
+        # print(mask)
         subnet_bits = cidr - default_cidr
-        if subnet_bits > 0:              #  1<= subnet_bits <=7
+        avail_host_amount = ip2network_address(ip,cidr)[0]
+        if subnet_bits > 0:
             flag = 'subnet'
             subnet_amount = 2 ** subnet_bits
-            binlist = int2binlist(subnet_bits)
-            print binlist
-            zeroend = 8 - subnet_bits
-            print zeroend
-            zeroendstr = '0' * zeroend
-            subnetid_list = [ int(x + zeroendstr,2) for x in binlist   ]       #  ['00000000', '01000000', '10000000', '11000000']  -->  [0, 64, 128, 192]
-            print subnetid_list
+            sub_binlist = int2binlist(subnet_bits)
+            # print sub_binlist
+            for subbinstr in sub_binlist:
+                fullbinstr = default_network_address_bin_str + subbinstr + '0' * (32 - cidr)
+                # print fullbinstr
+                binlist = bin2binlist(fullbinstr)
+                # print binlist
+                network_address_list.append( binlist2ip(binlist)  )
         else:
             flag = 'supernet'
             subnet_amount = 1
             network_address = ip2network_address(ip,cidr)[2]
             network_address_list.append(network_address)
-        return cidr,c, flag,  subnet_amount, network_address_list
+        return cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount
 
+    elif subnet_amount:
+        network_address_list = []
+        subnet_bits = min([ subnet_bits for subnet_bits in range(32) if 2 ** subnet_bits >= subnet_amount ] )
+        cidr = subnet_bits + default_cidr
+        avail_host_amount = ip2network_address(ip,cidr)[0]
+        if subnet_bits > 0:
+            flag = 'subnet'
+            sub_binlist = int2binlist(subnet_bits)
+            for subbinstr in sub_binlist:
+                fullbinstr = default_network_address_bin_str + subbinstr + '0' * (32 - cidr)
+                # print fullbinstr
+                binlist = bin2binlist(fullbinstr)
+                # print binlist
+                network_address_list.append( binlist2ip(binlist)  )
+        else:
+            flag = 'supernet'
+            subnet_amount = 1
+            network_address = ip2network_address(ip,cidr)[2]
+            network_address_list.append(network_address)
+        return cidr,c, flag,  subnet_amount,network_address_list, avail_host_amount
 def help_info():
     print 'help info...'
     sys.exit(1)
 
 def main():
     ip = '192.21.160.73'
-    mask = '255.255.255.192'
-    cidr = mask2cidr(mask)
-    print subnetting(ip,host_amount=30)
-    '''
-    # cmd
-    args = sys.argv
-    net = args[1].split('/')
+    print subnetting(ip,host_amount=100,subnet_amount=1)
 
-    if len(net) == 1 or net[1]=='':   # assume it's a mask
-        net = net[0]
-        print mask2int(net)
-    else:                             # in form like 192.168.1.2/24
-        net,mask = net
-        print subnet_correct(net,mask)
-    '''
 if __name__ == '__main__':
     main()
