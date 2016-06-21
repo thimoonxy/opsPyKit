@@ -13,3 +13,6 @@
 [submodule "portest"]
 	path = portest
 	url = git@github.com:thimoonxy/portest.git
+[submodule "mailatt"]
+	path = mailatt
+	url = git@github.com:thimoonxy/mailatt.git

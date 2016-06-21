@@ -1,9 +1,16 @@
 # opsPyKit
 Python toolkits for routine ops work.
 
+## Usage
 
+> This Kit includes useful python scripts for ops routine work.
 
-> This Kill includes useful python scripts for ops routine work.
+It's master project for each submodules, you need add `--recursive` to checkout all of them:
+```
+git clone --recursive https://github.com/thimoonxy/opsPyKit.git
+git submodule update --init --recursive
+```
+
 
 ### ASN checking
 
@@ -20,12 +27,6 @@ AS      | IP               | AS Name
 ### My pub IP checking
 > Just run the script directly, it'll check your outbond put ip and shows location, ISP, pub IP info in the output
 
-e.g.
-```
-[c:\~]$ myip.py
-北京市 电信通
-xxx.xxx.xxx.xxx
-```
 ### GeoIP tool
 > The ip_location.py basically has 2x ways to run:
 
