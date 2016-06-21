@@ -1,3 +1,15 @@
 [submodule "subnetting"]
 	path = subnetting
 	url = git@github.com:thimoonxy/subnetting.git
+[submodule "asn"]
+	path = asn
+	url = git@github.com:thimoonxy/asn.git
+[submodule "ip_location"]
+	path = ip_location
+	url = git@github.com:thimoonxy/ip_location.git
+[submodule "myip"]
+	path = myip
+	url = git@github.com:thimoonxy/myip.git
+[submodule "portest"]
+	path = portest
+	url = git@github.com:thimoonxy/portest.git
