@@ -1,0 +1,3 @@
+[submodule "subnetting"]
+	path = subnetting
+	url = git@github.com:thimoonxy/subnetting.git
