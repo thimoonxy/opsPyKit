@@ -8,9 +8,30 @@ Python toolkits for routine ops work.
 It's master project for each submodules, you need add `--recursive` to checkout all of them:
 ```
 git clone --recursive https://github.com/thimoonxy/opsPyKit.git
-git submodule update --init --recursive
 ```
 
+### subnetting
+
+```
+$ python subnetting.py --help
+Usage: subnetting.py [options]
+
+Options:
+  -i IP, --ip=IP
+  -c CIDR, --cidr=CIDR  Specify the cidr of mask to query. e.g. --cidr 24,
+                        indicates mask=255.255.255.0
+  -m MASK, --mask=MASK  Specify the Dotted Decimal mask to query. e.g. -m
+                        255.255.0.0
+  -h HOST_AMOUNT, --host_amount=HOST_AMOUNT
+                        Specify the number of available hosts we want in each
+                        subnet.
+  -s SUBNET_AMOUNT, --subnet_amount=SUBNET_AMOUNT
+                        Specify the number of subnets we want.
+  -M MODE, --mode=MODE  Specify  Mode 1-9 to calculate or transfer.
+  -a, --all             Details will be shown
+  -?, --help            --help --all shows Mode details.
+
+```
 
 ### ASN checking
 
